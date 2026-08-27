@@ -8,20 +8,8 @@ def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
         base_path = sys._MEIPASS
     else:
-        base_path = os.path.abspath(".")
+        base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, relative_path)
-
-def load_sound(filename):
-    path = resource_path(filename)
-    try:
-        return mixer.Sound(path)
-    except error:
-        from imageio_ffmpeg import get_ffmpeg_exe
-        wav = subprocess.check_output(
-            [get_ffmpeg_exe(), "-nostdin", "-i", path, "-vn", "-f", "wav", "pipe:1"],
-            stderr=subprocess.DEVNULL,
-        )
-        return mixer.Sound(io.BytesIO(wav))
 
 WIN_WIDTH= 600
 WIN_HEIGHT = 400
@@ -35,7 +23,7 @@ main_win = display.set_mode((WIN_WIDTH,WIN_HEIGHT))
 class GameSprite(sprite.Sprite):
     def __init__(self, player_image, player_x, player_y, player_speed, wight, height):
         super().__init__()
-        self.image = transform.scale(image.load(player_image), (wight, height))
+        self.image = transform.scale(image.load(resource_path(player_image)), (wight, height))
         self.speed = player_speed
         self.rect = self.image.get_rect()
         self.rect.x = player_x
@@ -108,6 +96,15 @@ class Ball(GameSprite):
         self.bounce_from_paddle(player_l, from_left=True)
         self.bounce_from_paddle(player_r, from_left=False)
 
+    def is_outside(self):
+        winner = ''
+        if self.rect.left >= WIN_WIDTH:
+            winner = 'player_l'
+        elif self.rect.right <= 0:
+            winner = 'player_r'
+        return winner
+
+
 PADDLE_W = 50
 PADDLE_H = 100
 PADDLE_MARGIN = 5
@@ -115,16 +112,15 @@ player_l = Player_L('рокетка.png', PADDLE_MARGIN, 200, 8, PADDLE_W, PADDL
 player_r = Player_R('рокетка2.png', WIN_WIDTH - PADDLE_MARGIN - PADDLE_W, 200, 8, PADDLE_W, PADDLE_H)
 ball = Ball('3D-rendering-sport-icon.png', 200, 200, 4, 50, 50, 4, 4)
 
-
+print(resource_path('you_win.ogg'))
 mixer.init()  #подключение музыки
 mixer.music.load(resource_path("music.ogg"))
 mixer.music.set_volume(0.25)
 mixer.music.play(loops=-1,)
-you_win = load_sound('you_win.ogg')
-game_over = load_sound('game_over.ogg')
-kick = load_sound('kick.ogg')
+you_win = mixer.Sound(resource_path('you_win1.ogg'))
+game_over = mixer.Sound(resource_path('gamw_over1.ogg'))
+kick = mixer.Sound(resource_path('kick.ogg'))
 clock = time.Clock()
-
 
 
 game = True
@@ -142,6 +138,14 @@ while game:
         player_l.reset()
         player_r.reset()
         ball.reset()
+
+        is_out = ball.is_outside()
+        if is_out == 'player_l':
+            game_over.play()
+            finish = True
+        elif is_out == 'player_r':
+            game_over.play()
+            finish = True
     
     display.update()
     clock.tick(fps)
