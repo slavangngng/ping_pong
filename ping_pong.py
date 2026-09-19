@@ -28,11 +28,19 @@ class GameSprite(sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = player_x
         self.rect.y = player_y
-    
+        self.start_x = player_x
+        self.start_y = player_y   
+        self.start_speed = player_speed
     def reset(self):
         main_win.blit(self.image, (self.rect.x, self.rect.y))
 
+    def restart(self):
+        self.rect.x = self.start_x
+        self.rect.y = self.start_y
+        self.speed = self.start_speed
+
 class Player_L(GameSprite):
+    score = 0
     def update(self):
         keys = key.get_pressed()
         if keys[K_w] and self.rect.y > 5:
@@ -41,6 +49,7 @@ class Player_L(GameSprite):
             self.rect.y += self.speed
 
 class Player_R(GameSprite):
+    score = 0
     def update(self):
         keys = key.get_pressed()
         if keys[K_UP] and self.rect.y > 5:
@@ -104,6 +113,19 @@ class Ball(GameSprite):
             winner = 'player_r'
         return winner
 
+font.init()
+class Word(sprite.Sprite):
+    def __init__(self,text,x,y,text_size=40,color='red'):
+        super().__init__()
+        self.image =  font.Font(None, text_size).render(text,True,color)
+        self.rect  =  self.image.get_rect(center=(x,y+10))
+
+    def draw(self):
+        main_win.blit(self.image, (self.rect.x, self.rect.y))
+
+    def set_text(self, text, text_size=40,color='red'):
+        self.image =  font.Font(None, text_size).render(text,True,color)
+
 
 PADDLE_W = 50
 PADDLE_H = 100
@@ -111,6 +133,7 @@ PADDLE_MARGIN = 5
 player_l = Player_L('рокетка.png', PADDLE_MARGIN, 200, 8, PADDLE_W, PADDLE_H)
 player_r = Player_R('рокетка2.png', WIN_WIDTH - PADDLE_MARGIN - PADDLE_W, 200, 8, PADDLE_W, PADDLE_H)
 ball = Ball('3D-rendering-sport-icon.png', 200, 200, 4, 50, 50, 4, 4)
+count = Word(f'{player_l.score}:{player_r.score}',300,10)
 
 print(resource_path('you_win.ogg'))
 mixer.init()  #подключение музыки
@@ -135,6 +158,7 @@ while game:
         player_l.update()
         player_r.update()
         ball.update(player_l, player_r)
+        count.draw()
         player_l.reset()
         player_r.reset()
         ball.reset()
@@ -142,10 +166,12 @@ while game:
         is_out = ball.is_outside()
         if is_out == 'player_l':
             game_over.play()
-            finish = True
+            player_l.score+=1
+            count.set_text(f'{player_l.score}:{player_r.score}')
         elif is_out == 'player_r':
             game_over.play()
-            finish = True
+            player_r.score+=1
+            count.set_text(f'{player_l.score}:{player_r.score}')
     
     display.update()
     clock.tick(fps)
