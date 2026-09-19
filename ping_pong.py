@@ -168,10 +168,17 @@ while game:
             game_over.play()
             player_l.score+=1
             count.set_text(f'{player_l.score}:{player_r.score}')
+            player_l.restart()
+            player_r.restart()
+            ball.restart()
+
         elif is_out == 'player_r':
             game_over.play()
             player_r.score+=1
             count.set_text(f'{player_l.score}:{player_r.score}')
+            player_l.restart()
+            player_r.restart()
+            ball.restart()
     
     display.update()
     clock.tick(fps)
