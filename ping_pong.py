@@ -3,6 +3,7 @@ import io
 import os
 import subprocess
 import sys
+import time as tm
 
 def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
@@ -19,6 +20,8 @@ win = transform.scale(image.load(resource_path('you win.png')),(WIN_WIDTH, WIN_H
 lose = transform.scale(image.load(resource_path('game+over.png')),(WIN_WIDTH, WIN_HEIGHT))
 background=transform.scale(image.load(resource_path('фон.jpg')),(WIN_WIDTH, WIN_HEIGHT))
 main_win = display.set_mode((WIN_WIDTH,WIN_HEIGHT))
+win_l = image.load(resource_path('рефери.png'))
+win_r = image.load(resource_path('рефери 2.png'))
 
 class GameSprite(sprite.Sprite):
     def __init__(self, player_image, player_x, player_y, player_speed, wight, height):
@@ -26,8 +29,8 @@ class GameSprite(sprite.Sprite):
         self.image = transform.scale(image.load(resource_path(player_image)), (wight, height))
         self.speed = player_speed
         self.rect = self.image.get_rect()
-        self.rect.x = player_x
-        self.rect.y = player_y
+        self.rect.centerx = player_x
+        self.rect.centery = player_y
         self.start_x = player_x
         self.start_y = player_y   
         self.start_speed = player_speed
@@ -35,12 +38,13 @@ class GameSprite(sprite.Sprite):
         main_win.blit(self.image, (self.rect.x, self.rect.y))
 
     def restart(self):
-        self.rect.x = self.start_x
-        self.rect.y = self.start_y
+        self.rect.centerx = self.start_x
+        self.rect.centery = self.start_y
         self.speed = self.start_speed
 
 class Player_L(GameSprite):
     score = 0
+    global_score = 0
     def update(self):
         keys = key.get_pressed()
         if keys[K_w] and self.rect.y > 5:
@@ -50,6 +54,7 @@ class Player_L(GameSprite):
 
 class Player_R(GameSprite):
     score = 0
+    global_score = 0
     def update(self):
         keys = key.get_pressed()
         if keys[K_UP] and self.rect.y > 5:
@@ -130,10 +135,12 @@ class Word(sprite.Sprite):
 PADDLE_W = 50
 PADDLE_H = 100
 PADDLE_MARGIN = 5
-player_l = Player_L('рокетка.png', PADDLE_MARGIN, 200, 8, PADDLE_W, PADDLE_H)
-player_r = Player_R('рокетка2.png', WIN_WIDTH - PADDLE_MARGIN - PADDLE_W, 200, 8, PADDLE_W, PADDLE_H)
-ball = Ball('3D-rendering-sport-icon.png', 200, 200, 4, 50, 50, 4, 4)
+player_l = Player_L('рокетка.png', PADDLE_MARGIN + PADDLE_W // 2, 200, 8, PADDLE_W, PADDLE_H)
+player_r = Player_R('рокетка2.png', WIN_WIDTH - PADDLE_MARGIN - PADDLE_W // 2, 200, 8, PADDLE_W, PADDLE_H)
+ball = Ball('3D-rendering-sport-icon.png', 300, 200, 4, 50, 50, 4, 4)
 count = Word(f'{player_l.score}:{player_r.score}',300,10)
+global_count = Word(f'{player_l.global_score}:{player_r.global_score}',280,350)
+
 
 print(resource_path('you_win.ogg'))
 mixer.init()  #подключение музыки
@@ -158,7 +165,6 @@ while game:
         player_l.update()
         player_r.update()
         ball.update(player_l, player_r)
-        count.draw()
         player_l.reset()
         player_r.reset()
         ball.reset()
@@ -171,7 +177,7 @@ while game:
             player_l.restart()
             player_r.restart()
             ball.restart()
-
+            
         elif is_out == 'player_r':
             game_over.play()
             player_r.score+=1
@@ -179,6 +185,49 @@ while game:
             player_l.restart()
             player_r.restart()
             ball.restart()
-    
+ 
+         
+            
+        count.draw()
+        if player_r.score == 5:
+            player_r.global_score+=1
+            player_l.score = 0
+            player_r.score = 0
+            global_count.set_text(f'{player_l.global_score}:{player_r.global_score}',80)
+            count.set_text(f'{player_l.score}:{player_r.score}')
+            if player_r.global_score < 5:
+                win_r_rect = win_r.get_rect(center =(WIN_WIDTH//2, WIN_HEIGHT //2))
+                main_win.blit(win_r,(win_r_rect.x , win_r_rect.y))            
+                global_count.draw()
+                display.update()
+                tm.sleep(3)
+            else:
+                mixer_music.fadeout(3000)
+                you_win.play()
+                main_win.blit(win,(0,0))
+                global_count.draw() 
+                finish = True
+
+            
+
+        elif player_l.score == 5:
+            player_l.global_score+=1
+            player_l.score = 0
+            player_r.score = 0
+            global_count.set_text(f'{player_l.global_score}:{player_r.global_score}',80)
+            count.set_text(f'{player_l.score}:{player_r.score}')
+            if player_l.global_score < 5:
+                win_l_rect = win_l.get_rect(center =(WIN_WIDTH//2, WIN_HEIGHT //2))
+                main_win.blit(win_l,(win_l_rect.x , win_l_rect.y))
+                global_count.draw() 
+                display.update()
+                tm.sleep(3)
+            else:
+                mixer_music.fadeout(3000)
+                you_win.play()
+                main_win.blit(win,(0,0))
+                global_count.draw() 
+                finish = True
+
     display.update()
     clock.tick(fps)
